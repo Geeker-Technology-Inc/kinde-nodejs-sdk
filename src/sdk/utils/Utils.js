@@ -1,22 +1,30 @@
-import crypto from 'crypto';
-
 /**
- * Generates a random string using the crypto module in Node.js
+ *
+ * @param {number} len the length of the string to generate
+ * @returns {string} a random string of hexadecimal characters
+ */
+function randomHexString(len) {
+  return Array.from(crypto.getRandomValues(new Uint8Array(len)))
+    .map(b => b.toString(16).padStart(2, '0')).join('');
+}
+/**
+ * Generates a random string using the crypto api.
  * @returns {string} a random string of 28 hexadecimal characters
  */
 export function randomString() {
-  return crypto.randomBytes(28).toString('hex');
+  return randomHexString(28);
 }
 
 /**
  * Generates SHA-256 hash of the input string.
  * @param {string} plain - The input string to be hashed.
- * @return {Buffer} - The generated hash as a buffer object.
+ * @return {Promise<string>} - The generated hash as a buffer object.
  */
-function sha256(plain) {
+async function sha256(plain) {
   const encoder = new TextEncoder();
   const data = encoder.encode(plain);
-  return crypto.createHash('sha256').update(data).digest();
+  const arrayBuffer = await crypto.subtle.digest('SHA-256', data)
+  return String.fromCharCode.apply(null, new Uint8Array(arrayBuffer));
 }
 
 /**
@@ -25,19 +33,17 @@ function sha256(plain) {
  * @returns {string} The base64 URL encoded string
  */
 function base64UrlEncode(str) {
-  return Buffer.from(str).toString('base64')
-    .replace(/\+/g, '-')
-    .replace(/\//g, '_')
-    .replace(/=+$/, '');
+  const base64 = btoa(str);
+  return base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
 
 /**
  * Function to generate a PKCE challenge from the codeVerifier
  * @param {string} codeVerifier - The verifier used to generate the PKCE challenge
- * @returns {string} A base64 URL encoded SHA-256 hash of the verifier
+ * @returns {Promise<string>} A base64 URL encoded SHA-256 hash of the verifier
  */
-export function pkceChallengeFromVerifier(codeVerifier) {
-  const hashed = sha256(codeVerifier);
+export async function pkceChallengeFromVerifier(codeVerifier) {
+  const hashed = await sha256(codeVerifier);
   return base64UrlEncode(hashed);
 }
 
@@ -58,7 +64,7 @@ export function parseJWT(token) {
 
   const base64Payload = parts[1];
   try {
-    return JSON.parse(Buffer.from(base64Payload, 'base64').toString('utf8'));
+    return JSON.parse(atob(base64Payload));
   } catch (error) {
     return null;
   }
@@ -87,9 +93,8 @@ function getCookie(request) {
  * @returns {string} - A session ID string
  */
 export function getSessionId(request) {
-  if (!request.headers?.cookie){
-    const sessionId = crypto.randomBytes(16).toString('hex');
-    return sessionId;
+  if (!request.headers?.cookie) {
+    return randomHexString(16);
   }
   const cookies = getCookie(request);
   return cookies.sessionId;

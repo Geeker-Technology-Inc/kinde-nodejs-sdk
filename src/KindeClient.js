@@ -130,7 +130,7 @@ export default class KindeClient extends ApiClient {
           case GrantType.PKCE:
             auth = new PKCE();
             const codeVerifier = randomString();
-            const codeChallenge = pkceChallengeFromVerifier(codeVerifier);
+            const codeChallenge = await pkceChallengeFromVerifier(codeVerifier);
             authorizationURL = auth.generateAuthorizationURL(this, {
               state,
               org_code,
@@ -155,7 +155,7 @@ export default class KindeClient extends ApiClient {
    * @property {String} request.query.org_code - Organization code
    */
   register() {
-    return (req, res, next) => {
+    return async (req, res, next) => {
       const sessionId = getSessionId(req);
       const {
         state = randomString(),
@@ -183,7 +183,7 @@ export default class KindeClient extends ApiClient {
           case GrantType.PKCE:
             auth = new PKCE();
             const codeVerifier = randomString();
-            const codeChallenge = pkceChallengeFromVerifier(codeVerifier);
+            const codeChallenge = await pkceChallengeFromVerifier(codeVerifier);
             authorizationURL = auth.generateAuthorizationURL(this, {
               state,
               org_code,
@@ -277,7 +277,7 @@ export default class KindeClient extends ApiClient {
    * @property {String} request.query.org_name - Organization name
    */
   createOrg() {
-    return (req, res, next) => {
+    return async (req, res, next) => {
       const sessionId = getSessionId(req);
       if (SessionStore.getDataByKey(sessionId, 'kindeAccessToken') && !this.isTokenExpired(sessionId)) {
         return next();
@@ -307,7 +307,7 @@ export default class KindeClient extends ApiClient {
           case GrantType.PKCE:
             auth = new PKCE();
             const codeVerifier = randomString();
-            const codeChallenge = pkceChallengeFromVerifier(codeVerifier);
+            const codeChallenge = await pkceChallengeFromVerifier(codeVerifier);
             authorizationURL = auth.generateAuthorizationURL(this, {
               state,
               is_create_org,
